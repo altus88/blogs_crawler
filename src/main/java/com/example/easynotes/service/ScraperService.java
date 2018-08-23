@@ -46,11 +46,8 @@ public class ScraperService
 		SiteMap siteMap = gson.fromJson(site.getWebScraperSchema(), SiteMap.class);
 		Selector rootSelector = siteMap.buildTree();
 
-//		LOG.info("siteMap = \n"+rootSelector.toString(""));
 
 		extractedTexts.clear();
-//		for(Selector selector : siteMap.selectors)
-//		{
 			for (String url : siteMap.startUrl)
 			{
 				try
@@ -65,7 +62,6 @@ public class ScraperService
 					e.printStackTrace();;
 				}
 			}
-//		}
 
 
 
