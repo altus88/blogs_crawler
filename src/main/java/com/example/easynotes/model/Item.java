@@ -94,14 +94,14 @@ public class Item implements Serializable
 		this.url = url;
 	}
 
-	public String getWebScraperSchema()
+	public String getImageUrl()
 	{
 		return imageUrl;
 	}
 
-	public void setWebScraperSchema(String webScraperSchema)
+	public void setImageUrl(String imageUrl)
 	{
-		this.imageUrl = webScraperSchema;
+		this.imageUrl = imageUrl;
 	}
 
 	public String getText()
@@ -114,6 +114,11 @@ public class Item implements Serializable
 		this.text = text;
 	}
 
-	// Getters and Setters ... (Omitted for brevity)
 
+
+	@Override
+	public String toString()
+	{
+		return "id:" + id + " url:" + url + " imageUrl:" + imageUrl + " text:" + text;
+	}
 }
