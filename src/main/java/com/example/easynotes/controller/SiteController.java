@@ -42,21 +42,9 @@ public class SiteController
 	@GetMapping("/sites/{id}")
 	public Site getSiteById(@PathVariable(value = "id") Long siteId) {
 
-		try
-		{
-			scraperService.parseWebScraper(siteId);
-		}
-		catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-
+		scraperService.parseWebScraper(siteId);
 		return siteRepository.findById(siteId)
 			.orElseThrow(() -> new ResourceNotFoundException("Site", "id", siteId));
-
-
-
-
 	}
 	// Update a Site
 	@PutMapping("/sites/{id}")

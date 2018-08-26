@@ -1,0 +1,40 @@
+spring:
+  profiles:
+    active: prod
+  datasource:
+    validationQuery: SELECT 1
+  jpa:
+    hibernate:
+     ddl-auto: update
+---
+
+spring:
+  profiles: prod
+  datasource:
+    url: "jdbc:mysql://localhost:3306/notes_app?serverTimezone=UTC"
+    driverClassName: com.mysql.jdbc.Driver
+    username: root
+    password: root
+  jpa:
+    properties:
+      hibernate:
+        dialect : org.hibernate.dialect.MySQL5InnoDBDialect
+
+---
+
+spring:
+  profiles: test
+  datasource:
+    url: "jdbc:h2:mem:TEST;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
+    driverClassName: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    properties:
+      hibernate:
+        dialect : org.hibernate.dialect.H2Dialect
+    database: HSQL
+    database-platform: org.hibernate.dialect.H2Dialect
+---
+
+

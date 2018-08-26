@@ -38,6 +38,7 @@ public class Site implements Serializable
 	private String url;
 
 	@NotBlank
+	@Column(columnDefinition = "TEXT")
 	private String webScraperSchema;
 
 	@Column(nullable = false, updatable = false)

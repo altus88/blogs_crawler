@@ -6,7 +6,6 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.json.JSONException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -38,10 +37,11 @@ public class ScraperService
 	private ItemRepository itemRepository;
 
 	private static final String separator = "KeySeparator";
-	private static final int timeout = 5000;
+	private static final int requestTimeout = 5000;
+	private static final int requestInterval = 2000;
 
 
-	public void parseWebScraper(Long siteId) throws JSONException
+	public void parseWebScraper(Long siteId)
 	{
 		Site site = siteRepository.findById(siteId).orElseThrow(() -> new ResourceNotFoundException("Site", "id", siteId));
 
@@ -58,7 +58,7 @@ public class ScraperService
 		{
 			try
 			{
-				Document document = Jsoup.connect(url).timeout(timeout).get();
+				Document document = requestDocument(url);
 				for (Selector selector : rootSelector.children)
 				{
 					browseSite(document, selector, extractedItems, "root");
@@ -78,8 +78,14 @@ public class ScraperService
 		}
 	}
 
-	
-	private void browseSite(Element element, Selector selector, Map<String, Item> extractedTexts, String key) throws IOException
+	private Document requestDocument(String url) throws IOException, InterruptedException
+	{
+		Document document = Jsoup.connect(url).timeout(requestTimeout).get();
+		Thread.sleep(requestInterval); // between subsequent requests, there should be a delay to avoid blocking
+		return document;
+	}
+
+	private void browseSite(Element element, Selector selector, Map<String, Item> extractedTexts, String key) throws IOException, InterruptedException
 	{
 		if (selector.type.equals(SelectorType.SelectorLink.name()))
 		{
@@ -87,12 +93,11 @@ public class ScraperService
 			for (Element headline : newsHeadlines)
 			{
 				String absUrl = headline.absUrl("href");
-				Document childDoc = Jsoup.connect(absUrl).timeout(timeout).get();
+				Document childDoc = requestDocument(absUrl);
 				int i = 1;
 				for (Selector childSelector : selector.children)
 				{
 					browseSite(childDoc, childSelector, extractedTexts, absUrl);
-
 				}
 			}
 		}
