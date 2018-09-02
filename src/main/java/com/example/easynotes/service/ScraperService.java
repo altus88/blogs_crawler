@@ -2,6 +2,7 @@ package com.example.easynotes.service;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
@@ -10,6 +11,9 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +24,8 @@ import com.example.easynotes.repository.ItemRepository;
 import com.example.easynotes.repository.SiteRepository;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
+import io.github.bonigarcia.wdm.ChromeDriverManager;
 
 /**
  * Created by anush on 18.07.18.
@@ -37,21 +43,31 @@ public class ScraperService
 	private ItemRepository itemRepository;
 
 	private static final String separator = "KeySeparator";
-	private static final int requestTimeout = 5000;
+	private static final int requestTimeout = 60000;
 	private static final int requestInterval = 2000;
 
+	static WebDriver driver;
+	static
+	{
+		ChromeDriverManager.getInstance().setup();
+		ChromeOptions options = new ChromeOptions();
+		options.addArguments("--headless");
+		driver = new ChromeDriver(options);
+	}
 
 	public void parseWebScraper(Long siteId)
 	{
+
+
 		Site site = siteRepository.findById(siteId).orElseThrow(() -> new ResourceNotFoundException("Site", "id", siteId));
 
 		GsonBuilder builder = new GsonBuilder();
 		Gson gson = builder.create();
 
 		SiteMap siteMap = gson.fromJson(site.getWebScraperSchema(), SiteMap.class);
-		Selector rootSelector = siteMap.buildTree();
+		Map<String, List<Selector>> selectorIdToChildren = siteMap.buildTree();
 
-		LOG.info("siteMap = \n" + rootSelector.toString(""));
+		LOG.info("siteMap = \n" + selectorIdToChildren.toString());
 		Map<String, Item> extractedItems = new HashMap<>();
 
 		for (String url : siteMap.startUrl)
@@ -59,9 +75,9 @@ public class ScraperService
 			try
 			{
 				Document document = requestDocument(url);
-				for (Selector selector : rootSelector.children)
+				for (Selector selector : selectorIdToChildren.get("_root"))
 				{
-					browseSite(document, selector, extractedItems, "root");
+					browseSite(document, selector, extractedItems, url, false, selectorIdToChildren);
 				}
 
 			}
@@ -71,21 +87,24 @@ public class ScraperService
 			}
 		}
 
-		LOG.info("extractedTexts = " + extractedItems.values());
+		LOG.info("extractedTexts = " + extractedItems.values().size());
 		for (Item item : extractedItems.values())
 		{
+			item.setSiteId(siteId);
 			itemRepository.save(item);
 		}
 	}
 
 	private Document requestDocument(String url) throws IOException, InterruptedException
 	{
-		Document document = Jsoup.connect(url).timeout(requestTimeout).get();
+		driver.get(url);
+		String pageSource = driver.getPageSource();
+		Document document = Jsoup.parse(pageSource);
 		Thread.sleep(requestInterval); // between subsequent requests, there should be a delay to avoid blocking
 		return document;
 	}
 
-	private void browseSite(Element element, Selector selector, Map<String, Item> extractedTexts, String key) throws IOException, InterruptedException
+	private void browseSite(Element element, Selector selector, Map<String, Item> extractedTexts, String key, boolean insideElement, Map<String, List<Selector>> selectorIdToChildren) throws IOException, InterruptedException
 	{
 		if (selector.type.equals(SelectorType.SelectorLink.name()))
 		{
@@ -93,23 +112,29 @@ public class ScraperService
 			for (Element headline : newsHeadlines)
 			{
 				String absUrl = headline.absUrl("href");
-				Document childDoc = requestDocument(absUrl);
-				int i = 1;
-				for (Selector childSelector : selector.children)
+				if (insideElement && selector.id.equals("Link"))
 				{
-					browseSite(childDoc, childSelector, extractedTexts, absUrl);
+					getItem(key, extractedTexts).setUrl(absUrl);
+				}
+				Document childDoc = requestDocument(absUrl);
+				for (Selector childSelector : selectorIdToChildren.get(selector.id))
+				{
+					browseSite(childDoc, childSelector, extractedTexts, insideElement ? key: absUrl, insideElement, selectorIdToChildren);
 				}
 			}
 		}
 		else if (selector.type.equals(SelectorType.SelectorElement.name()))
 		{
-			Elements newsHeadlines = element.select(selector.selector);
-			for (Element headline : newsHeadlines)
+			Elements selectedElements = element.select(selector.selector);
+			int size = selectedElements.size();
+			LOG.info("Found elements: " + size);
+			int i = 0;
+			for (Element selectedElement : selectedElements)
 			{
-				for (Selector childSelector : selector.children)
+				LOG.info("Parse: " + ++i + "/" + size);
+				for (Selector selectedElementDataSelector : selectorIdToChildren.get(selector.id))
 				{
-					browseSite(headline, childSelector, extractedTexts, key + separator + headline);
-
+					browseSite(selectedElement, selectedElementDataSelector, extractedTexts, key + separator + selectedElement, true, selectorIdToChildren);
 				}
 			}
 		}
@@ -118,22 +143,14 @@ public class ScraperService
 			Elements newsHeadlines = element.select(selector.selector);
 			for (Element headline : newsHeadlines)
 			{
-				Item item = extractedTexts.get(key);
-				if (item == null)
+				Item item = getItem(key, extractedTexts);
+				if (selector.id.equals("Intro"))
 				{
-					item = new Item();
-					int separatorIndex = key.indexOf(separator);
-					if (separatorIndex != -1)
-					{
-						item.setUrl(key.substring(0, separatorIndex));
-					}
-					else
-					{
-						item.setUrl(key);
-					}
-					extractedTexts.put(key, item);
+					item.setIntro(headline.text());
+				} else
+				{
+					item.setText(headline.text());
 				}
-				item.setText(headline.text());
 			}
 		}
 		else if (selector.type.equals(SelectorType.SelectorImage.name()))
@@ -151,6 +168,17 @@ public class ScraperService
 				item.setImageUrl(headline.absUrl("src"));
 			}
 		}
+	}
+
+	private Item getItem(String key,  Map<String, Item> keyToItem)
+	{
+		Item item = keyToItem.get(key);
+		if (item == null)
+		{
+			item = new Item();
+			keyToItem.put(key, item);
+		}
+		return item;
 	}
 
 }

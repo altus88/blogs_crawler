@@ -33,6 +33,6 @@ public class EasyNotesSandbox
     @Test
     public void parseSchema()
     {
-        parseWebScraper.parseWebScraper(1l);
+        parseWebScraper.parseWebScraper(3l);
     }
 }

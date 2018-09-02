@@ -34,14 +34,19 @@ public class Item implements Serializable
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	private Long siteId;
+
 	@NotBlank
 	private String url;
 
 	@Column
 	private String imageUrl;
 
-	@Column
+	@Column(columnDefinition = "text")
 	private String text;
+
+	@Column(columnDefinition = "text")
+	private String intro;
 
 	@Column(nullable = false, updatable = false)
 	@Temporal(TemporalType.TIMESTAMP)
@@ -114,7 +119,25 @@ public class Item implements Serializable
 		this.text = text;
 	}
 
+	public String getIntro()
+	{
+		return intro;
+	}
 
+	public void setIntro(String intro)
+	{
+		this.intro = intro;
+	}
+
+	public Long getSiteId()
+	{
+		return siteId;
+	}
+
+	public void setSiteId(Long siteId)
+	{
+		this.siteId = siteId;
+	}
 
 	@Override
 	public String toString()

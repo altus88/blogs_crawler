@@ -1,7 +1,9 @@
 package com.example.easynotes.service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -26,32 +28,22 @@ public class SiteMap
 		return "{id:"+id+" startUrl:"+startUrl+" selectors:"+selectors+"}";
 	}
 
-	public Selector buildTree()
+	public Map<String, List<Selector>> buildTree()
 	{
-		Selector rootSelector = new Selector();
+		Map<String, List<Selector>> selectorIdToChildrenSelectors = new HashMap<>();
 
 		for (Selector selector : selectors)
 		{
-
-			for (String parentSelectorId : selector.parentSelectors)
+			for (String parentSelectorId: selector.parentSelectors)
 			{
-				if (parentSelectorId.equalsIgnoreCase("_root"))
+				if (!selectorIdToChildrenSelectors.containsKey(parentSelectorId))
 				{
-					selector.parents.add(rootSelector);
-					rootSelector.children.add(selector);
+					selectorIdToChildrenSelectors.put(parentSelectorId, new ArrayList<>());
 				}
-				else
-				{
-					Selector parentSelector = getSelector(parentSelectorId);
-					if(!parentSelector.equals(selector))
-					{
-						selector.parents.add(parentSelector);
-						parentSelector.children.add(selector);
-					}
-				}
+				selectorIdToChildrenSelectors.get(parentSelectorId).add(selector);
 			}
 		}
 
-		return rootSelector;
+		return selectorIdToChildrenSelectors;
 	}
 }
