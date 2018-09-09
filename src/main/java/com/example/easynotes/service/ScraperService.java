@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -11,6 +13,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.PageLoadStrategy;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -53,11 +56,47 @@ public class ScraperService
 		ChromeOptions options = new ChromeOptions();
 		options.addArguments("--headless");
 		driver = new ChromeDriver(options);
+		driver.manage().timeouts().pageLoadTimeout(30, TimeUnit.SECONDS);
+		driver.manage().timeouts().setScriptTimeout(30, TimeUnit.SECONDS);
+	}
+
+	public void extractAndSaveBlogText(Long siteId)
+	{
+		Site site = siteRepository.findById(siteId).get();
+		String selectorString = site.getTextTag();
+		List<Item> items = itemRepository.getBySiteId(siteId);
+
+		int i = 0;
+		int n = items.size();
+		for (Item item : items)
+		{
+			StringBuilder text = new StringBuilder();
+			Document content = Jsoup.parse(item.getIntro());
+			Elements elements = content.select(selectorString);
+			for (Element element : elements)
+			{
+				extractTest(element, text);
+			}
+			item.setContent(text.toString());
+			itemRepository.save(item);
+			if (++i % 20 == 0)
+			{
+				LOG.info("Processed items: " + i + "/" + n);
+			}
+		}
+	}
+
+	private void extractTest(Element element, StringBuilder text)
+	{
+		text.append(element.text());
+		for (Element childElement : element.children())
+		{
+			extractTest(childElement, text);
+		}
 	}
 
 	public void parseWebScraper(Long siteId)
 	{
-
 
 		Site site = siteRepository.findById(siteId).orElseThrow(() -> new ResourceNotFoundException("Site", "id", siteId));
 
@@ -79,7 +118,6 @@ public class ScraperService
 				{
 					browseSite(document, selector, extractedItems, url, false, selectorIdToChildren);
 				}
-
 			}
 			catch (Exception e)
 			{
@@ -91,16 +129,36 @@ public class ScraperService
 		for (Item item : extractedItems.values())
 		{
 			item.setSiteId(siteId);
-			itemRepository.save(item);
+			try
+			{
+				itemRepository.save(item);
+			} catch (Exception e)
+			{
+				System.out.println(e);
+			}
 		}
 	}
 
 	private Document requestDocument(String url) throws IOException, InterruptedException
 	{
-		driver.get(url);
+		try
+		{
+			driver.get(url);
+
+			if (driver.getPageSource().contains("This site can’t be reached"))
+			{
+				System.out.println("Page not found. Wait and try again");
+				Thread.sleep(5000);
+				driver.get(url);
+			}
+		} catch (Exception ex)
+		{
+			System.out.println("Timeout happened. Try again ...");
+			driver.get(url);
+		}
+		Thread.sleep(requestInterval);
 		String pageSource = driver.getPageSource();
 		Document document = Jsoup.parse(pageSource);
-		Thread.sleep(requestInterval); // between subsequent requests, there should be a delay to avoid blocking
 		return document;
 	}
 
@@ -112,14 +170,18 @@ public class ScraperService
 			for (Element headline : newsHeadlines)
 			{
 				String absUrl = headline.absUrl("href");
+				Document childDoc = requestDocument(absUrl);
+
 				if (insideElement && selector.id.equals("Link"))
 				{
 					getItem(key, extractedTexts).setUrl(absUrl);
-				}
-				Document childDoc = requestDocument(absUrl);
-				for (Selector childSelector : selectorIdToChildren.get(selector.id))
+					getItem(key, extractedTexts).setIntro(childDoc.toString());
+				} else
 				{
-					browseSite(childDoc, childSelector, extractedTexts, insideElement ? key: absUrl, insideElement, selectorIdToChildren);
+					for (Selector childSelector : selectorIdToChildren.get(selector.id))
+					{
+						browseSite(childDoc, childSelector, extractedTexts, insideElement ? key: absUrl, insideElement, selectorIdToChildren);
+					}
 				}
 			}
 		}
@@ -136,21 +198,16 @@ public class ScraperService
 				{
 					browseSite(selectedElement, selectedElementDataSelector, extractedTexts, key + separator + selectedElement, true, selectorIdToChildren);
 				}
+				LOG.info("Elements: " + extractedTexts.keySet().size());
 			}
 		}
 		else if (selector.type.equals(SelectorType.SelectorText.name()))
 		{
 			Elements newsHeadlines = element.select(selector.selector);
+			Item item = getItem(key, extractedTexts);
 			for (Element headline : newsHeadlines)
 			{
-				Item item = getItem(key, extractedTexts);
-				if (selector.id.equals("Intro"))
-				{
-					item.setIntro(headline.text());
-				} else
-				{
-					item.setText(headline.text());
-				}
+				item.setText(headline.text());
 			}
 		}
 		else if (selector.type.equals(SelectorType.SelectorImage.name()))

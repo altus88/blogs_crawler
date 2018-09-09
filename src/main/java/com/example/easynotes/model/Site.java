@@ -41,6 +41,8 @@ public class Site implements Serializable
 	@Column(columnDefinition = "TEXT")
 	private String webScraperSchema;
 
+	private String textTag;
+
 	@Column(nullable = false, updatable = false)
 	@Temporal(TemporalType.TIMESTAMP)
 	@CreatedDate
@@ -100,6 +102,16 @@ public class Site implements Serializable
 	public void setWebScraperSchema(String webScraperSchema)
 	{
 		this.webScraperSchema = webScraperSchema;
+	}
+
+	public String getTextTag()
+	{
+		return textTag;
+	}
+
+	public void setTextTag(String textTag)
+	{
+		this.textTag = textTag;
 	}
 
 	// Getters and Setters ... (Omitted for brevity)

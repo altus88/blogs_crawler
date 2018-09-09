@@ -1,6 +1,10 @@
 package com.example.easynotes.controller;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -44,10 +48,18 @@ public class ItemController
 
 	@CrossOrigin(origins = "http://localhost:4200")
 	@GetMapping("/items/text/{search}")
-	public List<Item> getItemByText(@PathVariable(value = "search") String search) {
+	public List<ItemDTO> getItemByText(@PathVariable(value = "search") String search) {
 
-		return itemRepository.getByTextContaining(search);
+		search = " " + search.trim() + " "; // we want only words
+		List<ItemDTO> foundByTextItemDTOS = itemRepository.getByTextContaining(search).stream().map(item -> new ItemDTO(item)).collect(Collectors.toList());
+		Set<ItemDTO> foundByTextItemDTOSSet = new HashSet<>(foundByTextItemDTOS); // to find easy duplicates
 
+
+		List<ItemDTO> foundByContentItemDTOs = itemRepository.getByContentContaining(search).stream().map(item -> new ItemDTO(item)).collect(Collectors.toList())
+				.stream().filter(itemDTO -> !foundByTextItemDTOSSet.contains(itemDTO)).collect(Collectors.toList());
+		foundByTextItemDTOS.addAll(foundByContentItemDTOs);
+
+		return foundByTextItemDTOS;
 	}
 
 }

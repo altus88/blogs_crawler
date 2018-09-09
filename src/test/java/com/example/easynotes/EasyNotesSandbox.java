@@ -33,6 +33,12 @@ public class EasyNotesSandbox
     @Test
     public void parseSchema()
     {
-        parseWebScraper.parseWebScraper(3l);
+        parseWebScraper.parseWebScraper(1l);
+    }
+
+    @Test
+    public void extractAndSaveBlogText()
+    {
+        parseWebScraper.extractAndSaveBlogText(1l);
     }
 }

@@ -45,8 +45,11 @@ public class Item implements Serializable
 	@Column(columnDefinition = "text")
 	private String text;
 
-	@Column(columnDefinition = "text")
+	@Column(columnDefinition = "mediumtext")
 	private String intro;
+
+	@Column(columnDefinition = "mediumtext")
+	private String content;
 
 	@Column(nullable = false, updatable = false)
 	@Temporal(TemporalType.TIMESTAMP)
@@ -137,6 +140,16 @@ public class Item implements Serializable
 	public void setSiteId(Long siteId)
 	{
 		this.siteId = siteId;
+	}
+
+	public String getContent()
+	{
+		return content;
+	}
+
+	public void setContent(String content)
+	{
+		this.content = content;
 	}
 
 	@Override
