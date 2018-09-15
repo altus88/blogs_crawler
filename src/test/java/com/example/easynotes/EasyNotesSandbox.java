@@ -1,15 +1,26 @@
 package com.example.easynotes;
 
+import com.example.easynotes.controller.ImageDTO;
+import com.example.easynotes.model.Item;
 import com.example.easynotes.model.Site;
+import com.example.easynotes.repository.ItemRepository;
 import com.example.easynotes.repository.SiteRepository;
+import com.example.easynotes.service.ItemService;
 import com.example.easynotes.service.ScraperService;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import java.util.List;
+
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = EasyNotesApplication.class)
@@ -20,6 +31,19 @@ public class EasyNotesSandbox
 
     @Autowired
     ScraperService parseWebScraper;
+
+    @Autowired
+    ItemRepository itemRepository;
+
+    @Autowired
+    ItemService itemService;
+
+    @Test
+    public void test()
+    {
+        List<ImageDTO> imageDTOS = itemService.getImagesByText("Paris");
+        System.out.println(imageDTOS);
+    }
 
     @Test
     public void saveSite()
@@ -40,5 +64,11 @@ public class EasyNotesSandbox
     public void extractAndSaveBlogText()
     {
         parseWebScraper.extractAndSaveBlogText(1l);
+    }
+
+    @Test
+    public void extractAndSaveImages()
+    {
+        parseWebScraper.extractAndSaveImages(1l);
     }
 }

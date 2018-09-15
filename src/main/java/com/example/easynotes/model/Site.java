@@ -43,6 +43,8 @@ public class Site implements Serializable
 
 	private String textTag;
 
+	private String imageSelector;
+
 	@Column(nullable = false, updatable = false)
 	@Temporal(TemporalType.TIMESTAMP)
 	@CreatedDate
@@ -114,6 +116,8 @@ public class Site implements Serializable
 		this.textTag = textTag;
 	}
 
-	// Getters and Setters ... (Omitted for brevity)
-
+	public String getImageSelector()
+	{
+		return imageSelector;
+	}
 }

@@ -1,7 +1,8 @@
 1. Search by word (not text containing) -> then make search smarter (not just by the word containing, but doing topic modelling)
 2  In the the search result show sentence containing searched word
-3. Show images (there is tab "images")
-4. Make autocomplete of the cities/countries (user can not enter arbitrary text)
-5. Extract top places to visit (parsed from blog post) (there is tab images "places to visit" )
-6. Extract top engagements to do
-7. Extract places to stay (hotels recommendations from bloggers)
+3. Understand how to extract relevant images from the post
+4. Show images (there is tab "images")
+5. Make autocomplete of the cities/countries (user can not enter arbitrary text)
+6. Extract top places to visit (parsed from blog post) (there is tab images "places to visit" )
+7. Extract top engagements to do
+8. Extract places to stay (hotels recommendations from bloggers)

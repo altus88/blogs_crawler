@@ -51,6 +51,9 @@ public class Item implements Serializable
 	@Column(columnDefinition = "mediumtext")
 	private String content;
 
+	@Column(columnDefinition = "text")
+	private String images;
+
 	@Column(nullable = false, updatable = false)
 	@Temporal(TemporalType.TIMESTAMP)
 	@CreatedDate
@@ -150,6 +153,16 @@ public class Item implements Serializable
 	public void setContent(String content)
 	{
 		this.content = content;
+	}
+
+	public String getImages()
+	{
+		return images;
+	}
+
+	public void setImages(String images)
+	{
+		this.images = images;
 	}
 
 	@Override

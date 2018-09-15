@@ -1,10 +1,6 @@
 package com.example.easynotes.controller;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -18,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.easynotes.exception.ResourceNotFoundException;
 import com.example.easynotes.model.Item;
 import com.example.easynotes.repository.ItemRepository;
+import com.example.easynotes.service.ItemService;
 
 /**
  * Created by anush on 23.08.18.
@@ -30,6 +27,9 @@ public class ItemController
 
 	@Autowired
 	ItemRepository itemRepository;
+
+	@Autowired
+	ItemService itemService;
 
 
 	@GetMapping("/items")
@@ -50,16 +50,14 @@ public class ItemController
 	@GetMapping("/items/text/{search}")
 	public List<ItemDTO> getItemByText(@PathVariable(value = "search") String search) {
 
-		search = " " + search.trim() + " "; // we want only words
-		List<ItemDTO> foundByTextItemDTOS = itemRepository.getByTextContaining(search).stream().map(item -> new ItemDTO(item)).collect(Collectors.toList());
-		Set<ItemDTO> foundByTextItemDTOSSet = new HashSet<>(foundByTextItemDTOS); // to find easy duplicates
+		return itemService.getItemsByText(search);
+	}
 
-
-		List<ItemDTO> foundByContentItemDTOs = itemRepository.getByContentContaining(search).stream().map(item -> new ItemDTO(item)).collect(Collectors.toList())
-				.stream().filter(itemDTO -> !foundByTextItemDTOSSet.contains(itemDTO)).collect(Collectors.toList());
-		foundByTextItemDTOS.addAll(foundByContentItemDTOs);
-
-		return foundByTextItemDTOS;
+	@CrossOrigin(origins = "http://localhost:4200")
+	@GetMapping("/items/image/{search}")
+	public List<ImageDTO> getImagesByText(@PathVariable(value = "search") String search)
+	{
+		return itemService.getImagesByText(search);
 	}
 
 }

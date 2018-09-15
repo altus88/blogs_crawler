@@ -49,16 +49,8 @@ public class ScraperService
 	private static final int requestTimeout = 60000;
 	private static final int requestInterval = 2000;
 
-	static WebDriver driver;
-	static
-	{
-		ChromeDriverManager.getInstance().setup();
-		ChromeOptions options = new ChromeOptions();
-		options.addArguments("--headless");
-		driver = new ChromeDriver(options);
-		driver.manage().timeouts().pageLoadTimeout(30, TimeUnit.SECONDS);
-		driver.manage().timeouts().setScriptTimeout(30, TimeUnit.SECONDS);
-	}
+	private WebDriver driver;
+
 
 	public void extractAndSaveBlogText(Long siteId)
 	{
@@ -95,9 +87,47 @@ public class ScraperService
 		}
 	}
 
+	public void extractAndSaveImages(Long siteId)
+	{
+		Site site = siteRepository.findById(siteId).get();
+		String imageSelector = site.getImageSelector();
+		List<Item> items = itemRepository.getBySiteId(siteId);
+
+		int i = 0;
+		int n = items.size();
+		for (Item item : items)
+		{
+			StringBuilder images = new StringBuilder();
+			Document content = Jsoup.parse(item.getIntro());
+			Elements imageElements = content.select(imageSelector);
+			// keep in json format
+			images.append("{\"imageSrcAndAlt\":").append("[");
+			int elements = 0;
+			for (Element imageElement : imageElements)
+			{
+				if (elements > 0)
+				{
+					images.append(",");
+				}
+				images.append("{").append("\"").append("src").append("\"").append(":");
+				images.append("\"").append(imageElement.attr("src")).append("\"");
+				images.append(",").append("\"").append("alt").append("\"").append(":");
+				images.append("\"").append(imageElement.attr("alt")).append("\"").append("}");
+				elements++;
+			}
+			images.append("]").append("}");
+			item.setImages(images.toString());
+			itemRepository.save(item);
+			if (++i % 20 == 0)
+			{
+				LOG.info("Processed items: " + i + "/" + n);
+			}
+		}
+	}
+
 	public void parseWebScraper(Long siteId)
 	{
-
+		initializeDriver();
 		Site site = siteRepository.findById(siteId).orElseThrow(() -> new ResourceNotFoundException("Site", "id", siteId));
 
 		GsonBuilder builder = new GsonBuilder();
@@ -236,6 +266,16 @@ public class ScraperService
 			keyToItem.put(key, item);
 		}
 		return item;
+	}
+
+	private void initializeDriver()
+	{
+		ChromeDriverManager.getInstance().setup();
+		ChromeOptions options = new ChromeOptions();
+		options.addArguments("--headless");
+		driver = new ChromeDriver(options);
+		driver.manage().timeouts().pageLoadTimeout(30, TimeUnit.SECONDS);
+		driver.manage().timeouts().setScriptTimeout(30, TimeUnit.SECONDS);
 	}
 
 }
