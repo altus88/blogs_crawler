@@ -19,12 +19,16 @@ public class ItemDTO
     @JsonProperty("content")
     private String content;
 
+    @JsonProperty("imageUrl")
+    private String imageUrl;
+
     public ItemDTO(Item item)
     {
         this.header = item.getText();
         this.content = item.getContent().substring(0, 200) + " ... ";
         this.link = item.getUrl();
         this.id = item.getId();
+        this.imageUrl = item.getImageUrl();
     }
 
     @Override

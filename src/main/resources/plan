@@ -6,3 +6,13 @@
 6. Extract top places to visit (parsed from blog post) (there is tab images "places to visit" )
 7. Extract top engagements to do
 8. Extract places to stay (hotels recommendations from bloggers)
+
+
+Travel Blogs aggregator.
+
+1. Recent posts (post contains picture, name of the author, time published)
+2. Gallery
+3. Divide by category
+
+
+
